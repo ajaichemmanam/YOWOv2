@@ -30,7 +30,7 @@ def read_exclusions(exclusions_file):
         with open(exclusions_file, "r") as f:
             reader = csv.reader(f)
             for row in reader:
-                assert len(row) == 2, "Expected only 2 columns, got: " + row
+                assert len(row) == 2, f"Expected only 2 columns, got: {row}"
                 excluded.add(make_image_key(row[0], row[1]))
     return excluded
 
@@ -52,11 +52,7 @@ def load_image_lists(frames_dir, frame_list, is_train):
     """
     # frame_list_dir is /data3/ava/frame_lists/
     # contains 'train.csv' and 'val.csv'
-    if is_train:
-        list_name = "train.csv"
-    else:
-        list_name = "val.csv"
-
+    list_name = "train.csv" if is_train else "val.csv"
     list_filename = os.path.join(frame_list, list_name)
 
     image_paths = defaultdict(list)
@@ -82,7 +78,7 @@ def load_image_lists(frames_dir, frame_list, is_train):
 
     image_paths = [image_paths[i] for i in range(len(image_paths))]
 
-    print("Finished loading image paths from: {}".format(list_filename))
+    print(f"Finished loading image paths from: {list_filename}")
 
     return image_paths, video_idx_to_name
 
@@ -115,7 +111,7 @@ def load_boxes_and_labels(gt_box_list, exclusion_file, is_train=False, full_test
             key = "%s,%04d" % (video_name, frame_sec)
             # if mode == 'train' and key in excluded_keys:
             if key in excluded_keys:
-                print("Found {} to be excluded...".format(key))
+                print(f"Found {key} to be excluded...")
                 continue
 
             # Only select frame_sec % 4 = 0 samples for validation if not
@@ -127,9 +123,7 @@ def load_boxes_and_labels(gt_box_list, exclusion_file, is_train=False, full_test
             box = list(map(float, row[2:6]))
             label = -1 if row[6] == "" else int(row[6])
             if video_name not in all_boxes:
-                all_boxes[video_name] = {}
-                for sec in AVA_VALID_FRAMES:
-                    all_boxes[video_name][sec] = {}
+                all_boxes[video_name] = {sec: {} for sec in AVA_VALID_FRAMES}
             if box_key not in all_boxes[video_name][frame_sec]:
                 all_boxes[video_name][frame_sec][box_key] = [box, []]
                 unique_box_count += 1
@@ -138,14 +132,14 @@ def load_boxes_and_labels(gt_box_list, exclusion_file, is_train=False, full_test
             if label != -1:
                 count += 1
 
-    for video_name in all_boxes.keys():
-        for frame_sec in all_boxes[video_name].keys():
+    for video_name, value in all_boxes.items():
+        for frame_sec in value.keys():
             # Save in format of a list of [box_i, box_i_labels].
             all_boxes[video_name][frame_sec] = list(
                 all_boxes[video_name][frame_sec].values()
             )
 
-    print("Finished loading annotations from: %s" % ", ".join([ann_filename]))
+    print(f'Finished loading annotations from: {", ".join([ann_filename])}')
     print("Number of unique boxes: %d" % unique_box_count)
     print("Number of annotations: %d" % count)
 
@@ -211,10 +205,10 @@ def get_num_boxes_used(keyframe_indices, keyframe_boxes_and_labels):
         count (int): total number of used boxes.
     """
 
-    count = 0
-    for video_idx, sec_idx, _, _ in keyframe_indices:
-        count += len(keyframe_boxes_and_labels[video_idx][sec_idx])
-    return count
+    return sum(
+        len(keyframe_boxes_and_labels[video_idx][sec_idx])
+        for video_idx, sec_idx, _, _ in keyframe_indices
+    )
 
 
 def get_max_objs(keyframe_indices, keyframe_boxes_and_labels):

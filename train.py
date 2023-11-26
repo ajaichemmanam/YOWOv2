@@ -131,10 +131,10 @@ def train():
     # dist
     world_size = distributed_utils.get_world_size()
     per_gpu_batch = args.batch_size // world_size
-    print('World size: {}'.format(world_size))
+    print(f'World size: {world_size}')
     if args.distributed:
         distributed_utils.init_distributed_mode(args)
-        print("git:\n  {}\n".format(distributed_utils.get_sha()))
+        print(f"git:\n  {distributed_utils.get_sha()}\n")
 
     # path to save model
     path_to_save = os.path.join(args.save_folder, args.dataset, args.version)
@@ -237,7 +237,7 @@ def train():
 
             # inference
             outputs = model(video_clips)
-            
+
             # loss
             loss_dict = criterion(outputs, targets)
             losses = loss_dict['losses']
@@ -258,17 +258,17 @@ def train():
             if ni % accumulate == 0:
                 optimizer.step()
                 optimizer.zero_grad()
-                    
+
             # Display
             if distributed_utils.is_main_process() and iter_i % 10 == 0:
                 t1 = time.time()
                 cur_lr = [param_group['lr']  for param_group in optimizer.param_groups]
                 print_log(cur_lr, epoch,  max_epoch, iter_i, epoch_size,loss_dict_reduced, t1-t0, accumulate)
-            
+
                 t0 = time.time()
 
         lr_scheduler.step()
-        
+
         # evaluation
         if epoch % args.eval_epoch == 0 or (epoch + 1) == max_epoch:
             eval_one_epoch(args, model_without_ddp, evaluator, epoch, path_to_save)
@@ -279,7 +279,7 @@ def eval_one_epoch(args, model_eval, evaluator, epoch, path_to_save):
     if distributed_utils.is_main_process():
         if evaluator is None:
             print('No evaluator ... save model and go on training.')
-            
+
         else:
             print('eval ...')
             # set eval mode
@@ -288,14 +288,14 @@ def eval_one_epoch(args, model_eval, evaluator, epoch, path_to_save):
 
             # evaluate
             evaluator.evaluate_frame_map(model_eval, epoch + 1)
-                
+
             # set train mode.
             model_eval.trainable = True
             model_eval.train()
 
         # save model
         print('Saving state, epoch:', epoch + 1)
-        weight_name = '{}_epoch_{}.pth'.format(args.version, epoch+1)
+        weight_name = f'{args.version}_epoch_{epoch + 1}.pth'
         checkpoint_path = os.path.join(path_to_save, weight_name)
         torch.save({'model': model_eval.state_dict(),
                     'epoch': epoch,
@@ -309,8 +309,8 @@ def eval_one_epoch(args, model_eval, evaluator, epoch, path_to_save):
 
 def print_log(lr, epoch, max_epoch, iter_i, epoch_size, loss_dict, time, accumulate):
     # basic infor
-    log =  '[Epoch: {}/{}]'.format(epoch+1, max_epoch)
-    log += '[Iter: {}/{}]'.format(iter_i, epoch_size)
+    log = f'[Epoch: {epoch + 1}/{max_epoch}]'
+    log += f'[Iter: {iter_i}/{epoch_size}]'
     log += '[lr: {:.6f}]'.format(lr[0])
     # loss infor
     for k in loss_dict.keys():
