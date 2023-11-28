@@ -2,11 +2,11 @@ import numpy as np
 
 
 def nms(bboxes, scores, nms_thresh):
-    """"Pure Python NMS."""
-    x1 = bboxes[:, 0]  #xmin
-    y1 = bboxes[:, 1]  #ymin
-    x2 = bboxes[:, 2]  #xmax
-    y2 = bboxes[:, 3]  #ymax
+    """ "Pure Python NMS."""
+    x1 = bboxes[:, 0]  # xmin
+    y1 = bboxes[:, 1]  # ymin
+    x2 = bboxes[:, 2]  # xmax
+    y2 = bboxes[:, 3]  # ymax
 
     areas = (x2 - x1) * (y2 - y1)
     order = scores.argsort()[::-1]
@@ -26,7 +26,7 @@ def nms(bboxes, scores, nms_thresh):
         inter = w * h
 
         iou = inter / (areas[i] + areas[order[1:]] - inter + 1e-14)
-        #reserve all the boundingbox whose ovr less than thresh
+        # reserve all the boundingbox whose ovr less than thresh
         inds = np.where(iou <= nms_thresh)[0]
         order = order[inds + 1]
 
@@ -64,8 +64,12 @@ def multiclass_nms_class_aware(scores, labels, bboxes, nms_thresh, num_classes):
     return scores, labels, bboxes
 
 
-def multiclass_nms(scores, labels, bboxes, nms_thresh, num_classes, class_agnostic=False):
+def multiclass_nms(
+    scores, labels, bboxes, nms_thresh, num_classes, class_agnostic=False
+):
     if class_agnostic:
         return multiclass_nms_class_agnostic(scores, labels, bboxes, nms_thresh)
     else:
-        return multiclass_nms_class_aware(scores, labels, bboxes, nms_thresh, num_classes)
+        return multiclass_nms_class_aware(
+            scores, labels, bboxes, nms_thresh, num_classes
+        )

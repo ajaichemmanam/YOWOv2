@@ -31,6 +31,7 @@ class MethodAveragePrecision(Enum):
         Developed by: Rafael Padilla
         Last modification: Apr 28 2018
     """
+
     EveryPointInterpolation = 1
     ElevenPointInterpolation = 2
 
@@ -43,6 +44,7 @@ class CoordinatesType(Enum):
         Developed by: Rafael Padilla
         Last modification: Apr 28 2018
     """
+
     Relative = 1
     Absolute = 2
 
@@ -54,6 +56,7 @@ class BBType(Enum):
         Developed by: Rafael Padilla
         Last modification: May 24 2018
     """
+
     GroundTruth = 1
     Detected = 2
 
@@ -67,6 +70,7 @@ class BBFormat(Enum):
         Developed by: Rafael Padilla
         Last modification: May 24 2018
     """
+
     XYWH = 1
     XYX2Y2 = 2
 
@@ -74,8 +78,8 @@ class BBFormat(Enum):
 # size => (width, height) of the image
 # box => (X1, X2, Y1, Y2) of the bounding box
 def convertToRelativeValues(size, box):
-    dw = 1. / (size[0])
-    dh = 1. / (size[1])
+    dw = 1.0 / (size[0])
+    dh = 1.0 / (size[1])
     cx = (box[1] + box[0]) / 2.0
     cy = (box[3] + box[2]) / 2.0
     w = box[1] - box[0]
@@ -137,28 +141,42 @@ def add_bb_into_image(image, bb, color=(255, 0, 0), thickness=2, label=None):
         r_Xin = x1 - int(thickness / 2)
         r_Yin = y1 - th - int(thickness / 2)
         # Draw filled rectangle to put the text in it
-        cv2.rectangle(image, (r_Xin, r_Yin - thickness),
-                      (r_Xin + tw + thickness * 3, r_Yin + th + int(12.5 * fontScale)), (b, g, r),
-                      -1)
-        cv2.putText(image, label, (xin_bb, yin_bb), font, fontScale, (0, 0, 0), fontThickness,
-                    cv2.LINE_AA)
+        cv2.rectangle(
+            image,
+            (r_Xin, r_Yin - thickness),
+            (r_Xin + tw + thickness * 3, r_Yin + th + int(12.5 * fontScale)),
+            (b, g, r),
+            -1,
+        )
+        cv2.putText(
+            image,
+            label,
+            (xin_bb, yin_bb),
+            font,
+            fontScale,
+            (0, 0, 0),
+            fontThickness,
+            cv2.LINE_AA,
+        )
     return image
 
 
 # BoundingBox
 class BoundingBox:
-    def __init__(self,
-                 imageName,
-                 classId,
-                 x,
-                 y,
-                 w,
-                 h,
-                 typeCoordinates=None,
-                 imgSize=None,
-                 bbType=None,
-                 classConfidence=None,
-                 format=None):
+    def __init__(
+        self,
+        imageName,
+        classId,
+        x,
+        y,
+        w,
+        h,
+        typeCoordinates=None,
+        imgSize=None,
+        bbType=None,
+        classConfidence=None,
+        format=None,
+    ):
         """Constructor.
         Args:
             imageName: String representing the image name.
@@ -184,10 +202,12 @@ class BoundingBox:
         self._typeCoordinates = typeCoordinates
         if typeCoordinates == CoordinatesType.Relative and imgSize is None:
             raise IOError(
-                'Parameter \'imgSize\' is required. It is necessary to inform the image size.')
+                "Parameter 'imgSize' is required. It is necessary to inform the image size."
+            )
         if bbType == BBType.Detected and classConfidence is None:
             raise IOError(
-                'For bbType=\'Detection\', it is necessary to inform the classConfidence value.')
+                "For bbType='Detection', it is necessary to inform the classConfidence value."
+            )
         # if classConfidence != None and (classConfidence < 0 or classConfidence > 1):
         # raise IOError('classConfidence value must be a real value between 0 and 1. Value: %f' %
         # classConfidence)
@@ -199,8 +219,10 @@ class BoundingBox:
 
         # If relative coordinates, convert to absolute values
         # For relative coords: (x,y,w,h)=(X_center/img_width , Y_center/img_height)
-        if (typeCoordinates == CoordinatesType.Relative):
-            (self._x, self._y, self._w, self._h) = convertToAbsoluteValues(imgSize, (x, y, w, h))
+        if typeCoordinates == CoordinatesType.Relative:
+            (self._x, self._y, self._w, self._h) = convertToAbsoluteValues(
+                imgSize, (x, y, w, h)
+            )
             self._width_img = imgSize[0]
             self._height_img = imgSize[1]
             if format == BBFormat.XYWH:
@@ -210,7 +232,8 @@ class BoundingBox:
                 self._h = self._y2 - self._y
             else:
                 raise IOError(
-                    'For relative coordinates, the format must be XYWH (x,y,width,height)')
+                    "For relative coordinates, the format must be XYWH (x,y,width,height)"
+                )
         # For absolute coords: (x,y,w,h)=real bb coords
         else:
             self._x = x
@@ -241,13 +264,17 @@ class BoundingBox:
     def getRelativeBoundingBox(self, imgSize=None):
         if imgSize is None and self._width_img is None and self._height_img is None:
             raise IOError(
-                'Parameter \'imgSize\' is required. It is necessary to inform the image size.')
+                "Parameter 'imgSize' is required. It is necessary to inform the image size."
+            )
         if imgSize is None:
-            return convertToRelativeValues((imgSize[0], imgSize[1]),
-                                           (self._x, self._y, self._w, self._h))
+            return convertToRelativeValues(
+                (imgSize[0], imgSize[1]), (self._x, self._y, self._w, self._h)
+            )
         else:
-            return convertToRelativeValues((self._width_img, self._height_img),
-                                           (self._x, self._y, self._w, self._h))
+            return convertToRelativeValues(
+                (self._width_img, self._height_img),
+                (self._x, self._y, self._w, self._h),
+            )
 
     def getImageName(self):
         return self._imageName
@@ -277,14 +304,16 @@ class BoundingBox:
         det2BB = det2.getAbsoluteBoundingBox(format=BBFormat.XYWH)
         det2ImgSize = det2.getImageSize()
 
-        if det1.getClassId() == det2.getClassId() and \
-           det1.classConfidence == det2.classConfidenc() and \
-           det1BB[0] == det2BB[0] and \
-           det1BB[1] == det2BB[1] and \
-           det1BB[2] == det2BB[2] and \
-           det1BB[3] == det2BB[3] and \
-           det1ImgSize[0] == det1ImgSize[0] and \
-           det2ImgSize[1] == det2ImgSize[1]:
+        if (
+            det1.getClassId() == det2.getClassId()
+            and det1.classConfidence == det2.classConfidenc()
+            and det1BB[0] == det2BB[0]
+            and det1BB[1] == det2BB[1]
+            and det1BB[2] == det2BB[2]
+            and det1BB[3] == det2BB[3]
+            and det1ImgSize[0] == det1ImgSize[0]
+            and det2ImgSize[1] == det2ImgSize[1]
+        ):
             return True
         return False
 
@@ -303,11 +332,12 @@ class BoundingBox:
             imgSize=boundingBox.getImageSize(),
             bbType=boundingBox.getBBType(),
             classConfidence=boundingBox.getConfidence(),
-            format=BBFormat.XYWH)
+            format=BBFormat.XYWH,
+        )
         return newBoundingBox
 
 
-#BoundingBoxes
+# BoundingBoxes
 class BoundingBoxes:
     def __init__(self):
         self._boundingBoxes = []
@@ -388,14 +418,10 @@ class BoundingBoxes:
 
 
 class Evaluator:
-    def __init__(self, dataset='ucf24'):
+    def __init__(self, dataset="ucf24"):
         self.dataset = dataset
 
-        
-    def GetPascalVOCMetrics(self,
-                            boundingboxes,
-                            IOUThreshold=0.5,
-                            method=None):
+    def GetPascalVOCMetrics(self, boundingboxes, IOUThreshold=0.5, method=None):
         """Get the metrics used by the VOC Pascal 2012 challenge.
         Get
         Args:
@@ -420,7 +446,9 @@ class Evaluator:
             dict['total TP']: total number of True Positive detections;
             dict['total FP']: total number of False Negative detections;
         """
-        ret = []  # list containing metrics (precision, recall, average precision) of each class
+        ret = (
+            []
+        )  # list containing metrics (precision, recall, average precision) of each class
         # List with all ground truths (Ex: [imageName,class,confidence=1, (bb coordinates XYX2Y2)])
         groundTruths = []
         # List with all detections (Ex: [imageName,class,confidence,(bb coordinates XYX2Y2)])
@@ -431,18 +459,23 @@ class Evaluator:
         for bb in boundingboxes.getBoundingBoxes():
             # [imageName, class, confidence, (bb coordinates XYX2Y2)]
             if bb.getBBType() == BBType.GroundTruth:
-                groundTruths.append([
-                    bb.getImageName(),
-                    bb.getClassId(), 1,
-                    bb.getAbsoluteBoundingBox(BBFormat.XYX2Y2)
-                ])
+                groundTruths.append(
+                    [
+                        bb.getImageName(),
+                        bb.getClassId(),
+                        1,
+                        bb.getAbsoluteBoundingBox(BBFormat.XYX2Y2),
+                    ]
+                )
             else:
-                detections.append([
-                    bb.getImageName(),
-                    bb.getClassId(),
-                    bb.getConfidence(),
-                    bb.getAbsoluteBoundingBox(BBFormat.XYX2Y2)
-                ])
+                detections.append(
+                    [
+                        bb.getImageName(),
+                        bb.getClassId(),
+                        bb.getConfidence(),
+                        bb.getAbsoluteBoundingBox(BBFormat.XYX2Y2),
+                    ]
+                )
             # get class
             if bb.getClassId() not in classes:
                 classes.append(bb.getClassId())
@@ -503,28 +536,29 @@ class Evaluator:
                 [ap, mpre, mrec, _] = Evaluator.ElevenPointInterpolatedAP(rec, prec)
             # add class result in the dictionary to be returned
             r = {
-                'class': c,
-                'precision': prec,
-                'recall': rec,
-                'AP': ap,
-                'interpolated precision': mpre,
-                'interpolated recall': mrec,
-                'total positives': npos,
-                'total TP': np.sum(TP),
-                'total FP': np.sum(FP)
+                "class": c,
+                "precision": prec,
+                "recall": rec,
+                "AP": ap,
+                "interpolated precision": mpre,
+                "interpolated recall": mrec,
+                "total positives": npos,
+                "total TP": np.sum(TP),
+                "total FP": np.sum(FP),
             }
             ret.append(r)
         return ret
 
-
-    def PlotPrecisionRecallCurve(self,
-                                 boundingBoxes,
-                                 IOUThreshold=0.5,
-                                 method=None,
-                                 showAP=False,
-                                 showInterpolatedPrecision=False,
-                                 savePath=None,
-                                 showGraphic=True):
+    def PlotPrecisionRecallCurve(
+        self,
+        boundingBoxes,
+        IOUThreshold=0.5,
+        method=None,
+        showAP=False,
+        showInterpolatedPrecision=False,
+        savePath=None,
+        showGraphic=True,
+    ):
         """PlotPrecisionRecallCurve
         Plot the Precision x Recall curve for a given class.
         Args:
@@ -556,27 +590,33 @@ class Evaluator:
             dict['total TP']: total number of True Positive detections;
             dict['total FP']: total number of False Negative detections;
         """
-        results = self.GetPascalVOCMetrics(boundingBoxes, IOUThreshold, method=MethodAveragePrecision.EveryPointInterpolation)
+        results = self.GetPascalVOCMetrics(
+            boundingBoxes,
+            IOUThreshold,
+            method=MethodAveragePrecision.EveryPointInterpolation,
+        )
         result = None
         # Each resut represents a class
         for result in results:
             if result is None:
-                raise IOError('Error: Class %d could not be found.' % classId)
+                raise IOError("Error: Class %d could not be found." % classId)
 
-            classId = result['class']
-            precision = result['precision']
-            recall = result['recall']
-            average_precision = result['AP']
-            mpre = result['interpolated precision']
-            mrec = result['interpolated recall']
-            npos = result['total positives']
-            total_tp = result['total TP']
-            total_fp = result['total FP']
+            classId = result["class"]
+            precision = result["precision"]
+            recall = result["recall"]
+            average_precision = result["AP"]
+            mpre = result["interpolated precision"]
+            mrec = result["interpolated recall"]
+            npos = result["total positives"]
+            total_tp = result["total TP"]
+            total_fp = result["total FP"]
 
             plt.close()
             if showInterpolatedPrecision:
                 if method == MethodAveragePrecision.EveryPointInterpolation:
-                    plt.plot(mrec, mpre, '--r', label='Interpolated precision (every point)')
+                    plt.plot(
+                        mrec, mpre, "--r", label="Interpolated precision (every point)"
+                    )
                 elif method == MethodAveragePrecision.ElevenPointInterpolation:
                     # Uncomment the line below if you want to plot the area
                     # plt.plot(mrec, mpre, 'or', label='11-point interpolated precision')
@@ -589,16 +629,19 @@ class Evaluator:
                             idxEq = np.argwhere(mrec == r)
                             nrec.append(r)
                             nprec.append(max([mpre[int(id)] for id in idxEq]))
-                    plt.plot(nrec, nprec, 'or', label='11-point interpolated precision')
-            plt.plot(recall, precision, label='Precision')
-            plt.xlabel('recall')
-            plt.ylabel('precision')
+                    plt.plot(nrec, nprec, "or", label="11-point interpolated precision")
+            plt.plot(recall, precision, label="Precision")
+            plt.xlabel("recall")
+            plt.ylabel("precision")
             if showAP:
                 ap_str = "{0:.2f}%".format(average_precision * 100)
                 # ap_str = "{0:.4f}%".format(average_precision * 100)
-                plt.title('Precision x Recall curve \nClass: %s, AP: %s' % (str(classId), ap_str))
+                plt.title(
+                    "Precision x Recall curve \nClass: %s, AP: %s"
+                    % (str(classId), ap_str)
+                )
             else:
-                plt.title('Precision x Recall curve \nClass: %s' % str(classId))
+                plt.title("Precision x Recall curve \nClass: %s" % str(classId))
             plt.legend(shadow=True)
             plt.grid()
 
@@ -608,7 +651,7 @@ class Evaluator:
                 os.makedirs(savePath_, exist_ok=True)
 
                 # save fig
-                plt.savefig(os.path.join(savePath_, classId + '.png'))
+                plt.savefig(os.path.join(savePath_, classId + ".png"))
 
             if showGraphic is True:
                 plt.show()
@@ -616,7 +659,6 @@ class Evaluator:
                 plt.pause(0.05)
 
         return results
-
 
     @staticmethod
     def CalculateAveragePrecision(rec, prec):
@@ -638,12 +680,11 @@ class Evaluator:
         for i in ii:
             ap = ap + np.sum((mrec[i] - mrec[i - 1]) * mpre[i])
         # return [ap, mpre[1:len(mpre)-1], mrec[1:len(mpre)-1], ii]
-        return [ap, mpre[0:len(mpre) - 1], mrec[0:len(mpre) - 1], ii]
-
+        return [ap, mpre[0 : len(mpre) - 1], mrec[0 : len(mpre) - 1], ii]
 
     @staticmethod
     def ElevenPointInterpolatedAP(rec, prec):
-        """ 11-point interpolated average precision """
+        """11-point interpolated average precision"""
 
         # def CalculateAveragePrecision2(rec, prec):
         mrec = []
@@ -665,7 +706,7 @@ class Evaluator:
             pmax = 0
             # If there are recalls above r
             if argGreaterRecalls.size != 0:
-                pmax = max(mpre[argGreaterRecalls.min():])
+                pmax = max(mpre[argGreaterRecalls.min() :])
             recallValid.append(r)
             rhoInterp.append(pmax)
         # By definition AP = sum(max(precision whose recall is above r))/11
@@ -692,10 +733,9 @@ class Evaluator:
         rhoInterp = [i[1] for i in cc]
         return [ap, rhoInterp, recallValues, None]
 
-
     @staticmethod
     def _getAllIOUs(reference, detections):
-        """ For each detections, calculate IOU with reference """
+        """For each detections, calculate IOU with reference"""
 
         ret = []
         bbReference = reference.getAbsoluteBoundingBox(BBFormat.XYX2Y2)
@@ -710,7 +750,9 @@ class Evaluator:
         # cv2.imshow("comparing",img)
         # cv2.waitKey(0)
         # cv2.destroyWindow("comparing")
-        return sorted(ret, key=lambda i: i[0], reverse=True)  # sort by iou (from highest to lowest)
+        return sorted(
+            ret, key=lambda i: i[0], reverse=True
+        )  # sort by iou (from highest to lowest)
 
     @staticmethod
     def iou(boxA, boxB):
@@ -724,12 +766,11 @@ class Evaluator:
         assert iou >= 0
         return iou
 
-
     @staticmethod
     def _boxesIntersect(boxA, boxB):
         """
-            boxA = (Ax1,Ay1,Ax2,Ay2)
-            boxB = (Bx1,By1,Bx2,By2)
+        boxA = (Ax1,Ay1,Ax2,Ay2)
+        boxB = (Bx1,By1,Bx2,By2)
         """
 
         if boxA[0] > boxB[2]:
@@ -742,7 +783,6 @@ class Evaluator:
             return False  # boxA is below boxB
         return True
 
-
     @staticmethod
     def _getIntersectionArea(boxA, boxB):
         xA = max(boxA[0], boxB[0])
@@ -752,7 +792,6 @@ class Evaluator:
         # intersection area
         return (xB - xA + 1) * (yB - yA + 1)
 
-
     @staticmethod
     def _getUnionAreas(boxA, boxB, interArea=None):
         area_A = Evaluator._getArea(boxA)
@@ -761,50 +800,55 @@ class Evaluator:
             interArea = Evaluator._getIntersectionArea(boxA, boxB)
         return float(area_A + area_B - interArea)
 
-
     @staticmethod
     def _getArea(box):
         return (box[2] - box[0] + 1) * (box[3] - box[1] + 1)
 
 
-
 # Validate formats
 def ValidateFormats(argFormat, argName, errors):
-    if argFormat == 'xywh':
+    if argFormat == "xywh":
         return BBFormat.XYWH
-    elif argFormat == 'xyrb':
+    elif argFormat == "xyrb":
         return BBFormat.XYX2Y2
     elif argFormat is None:
         return BBFormat.XYWH  # default when nothing is passed
     else:
         errors.append(
-            'argument %s: invalid value. It must be either \'xywh\' or \'xyrb\'' % argName)
+            "argument %s: invalid value. It must be either 'xywh' or 'xyrb'" % argName
+        )
 
 
 # Validate mandatory args
 def ValidateMandatoryArgs(arg, argName, errors):
     if arg is None:
-        errors.append('argument %s: required argument' % argName)
+        errors.append("argument %s: required argument" % argName)
     else:
         return True
 
 
 def ValidateImageSize(arg, argName, argInformed, errors):
-    errorMsg = 'argument %s: required argument if %s is relative' % (argName, argInformed)
+    errorMsg = "argument %s: required argument if %s is relative" % (
+        argName,
+        argInformed,
+    )
     ret = None
     if arg is None:
         errors.append(errorMsg)
     else:
-        arg = arg.replace('(', '').replace(')', '')
-        args = arg.split(',')
+        arg = arg.replace("(", "").replace(")", "")
+        args = arg.split(",")
         if len(args) != 2:
             errors.append(
-                '%s. It must be in the format \'width,height\' (e.g. \'600,400\')' % errorMsg)
+                "%s. It must be in the format 'width,height' (e.g. '600,400')"
+                % errorMsg
+            )
         else:
             if not args[0].isdigit() or not args[1].isdigit():
                 errors.append(
-                    '%s. It must be in INdiaTEGER the format \'width,height\' (e.g. \'600,400\')' %
-                    errorMsg)
+                    "%s. It must be in INdiaTEGER the format 'width,height' (e.g. '600,400')"
+                    % errorMsg
+                )
             else:
                 ret = (int(args[0]), int(args[1]))
     return ret
@@ -812,22 +856,26 @@ def ValidateImageSize(arg, argName, argInformed, errors):
 
 # Validate coordinate types
 def ValidateCoordinatesTypes(arg, argName, errors):
-    if arg == 'abs':
+    if arg == "abs":
         return CoordinatesType.Absolute
-    elif arg == 'rel':
+    elif arg == "rel":
         return CoordinatesType.Relative
     elif arg is None:
         return CoordinatesType.Absolute  # default when nothing is passed
-    errors.append('argument %s: invalid value. It must be either \'rel\' or \'abs\'' % argName)
+    errors.append(
+        "argument %s: invalid value. It must be either 'rel' or 'abs'" % argName
+    )
 
 
-def getBoundingBoxes(directory,
-                     isGT,
-                     bbFormat,
-                     coordType,
-                     allBoundingBoxes=None,
-                     allClasses=None,
-                     imgSize=(0, 0)):
+def getBoundingBoxes(
+    directory,
+    isGT,
+    bbFormat,
+    coordType,
+    allBoundingBoxes=None,
+    allClasses=None,
+    imgSize=(0, 0),
+):
     """Read txt files containing bounding boxes (ground truth and detections)."""
     print(directory)
     if allBoundingBoxes is None:
@@ -851,12 +899,12 @@ def getBoundingBoxes(directory,
         fh1 = open(f, "r")
         for line in fh1:
             line = line.replace("\n", "")
-            if line.replace(' ', '') == '':
+            if line.replace(" ", "") == "":
                 continue
             splitLine = line.split(" ")
             if isGT:
                 # idClass = int(splitLine[0]) #class
-                idClass = (splitLine[0])  # class
+                idClass = splitLine[0]  # class
                 x = float(splitLine[1])
                 y = float(splitLine[2])
                 w = float(splitLine[3])
@@ -871,10 +919,11 @@ def getBoundingBoxes(directory,
                     coordType,
                     imgSize,
                     BBType.GroundTruth,
-                    format=bbFormat)
+                    format=bbFormat,
+                )
             else:
                 # idClass = int(splitLine[0]) #class
-                idClass = (splitLine[0])  # class
+                idClass = splitLine[0]  # class
                 confidence = float(splitLine[1])
                 x = float(splitLine[2])
                 y = float(splitLine[3])
@@ -891,7 +940,8 @@ def getBoundingBoxes(directory,
                     imgSize,
                     BBType.Detected,
                     confidence,
-                    format=bbFormat)
+                    format=bbFormat,
+                )
             allBoundingBoxes.addBoundingBox(bb)
             if idClass not in allClasses:
                 allClasses.append(idClass)
@@ -899,29 +949,36 @@ def getBoundingBoxes(directory,
     return allBoundingBoxes, allClasses
 
 
-def evaluate_frameAP(gtFolder, detFolder, threshold = 0.5, savePath = None, datatset = 'ucf24', show_pr_curve=False):
+def evaluate_frameAP(
+    gtFolder,
+    detFolder,
+    threshold=0.5,
+    savePath=None,
+    datatset="ucf24",
+    show_pr_curve=False,
+):
     # Get current path to set default folders
-    #VERSION = '0.1 (beta)'
-    gtFormat = 'xyrb'
-    detFormat = 'xyrb'
-    gtCoordinates = 'abs'
-    detCoordinates = 'abs'
+    # VERSION = '0.1 (beta)'
+    gtFormat = "xyrb"
+    detFormat = "xyrb"
+    gtCoordinates = "abs"
+    detCoordinates = "abs"
 
-    gtFolder = os.path.join(os.path.abspath('.'), gtFolder)
-    detFolder = os.path.join(os.path.abspath('.'), detFolder)
-    savePath = os.path.join(os.path.abspath('.'), savePath)
+    gtFolder = os.path.join(os.path.abspath("."), gtFolder)
+    detFolder = os.path.join(os.path.abspath("."), detFolder)
+    savePath = os.path.join(os.path.abspath("."), savePath)
 
     iouThreshold = threshold
 
     # Arguments validation
     errors = []
     # Validate formats
-    gtFormat = ValidateFormats(gtFormat, 'gtFormat', errors)
-    detFormat = ValidateFormats(detFormat, '-detformat', errors)
+    gtFormat = ValidateFormats(gtFormat, "gtFormat", errors)
+    detFormat = ValidateFormats(detFormat, "-detformat", errors)
 
     # Coordinates types
-    gtCoordType = ValidateCoordinatesTypes(gtCoordinates, '-gtCoordinates', errors)
-    detCoordType = ValidateCoordinatesTypes(detCoordinates, '-detCoordinates', errors)
+    gtCoordType = ValidateCoordinatesTypes(gtCoordinates, "-gtCoordinates", errors)
+    detCoordType = ValidateCoordinatesTypes(detCoordinates, "-detCoordinates", errors)
     imgSize = (0, 0)
 
     # # Create directory to save results
@@ -940,14 +997,22 @@ def evaluate_frameAP(gtFolder, detFolder, threshold = 0.5, savePath = None, data
     # print('detFolder = %s' % detFolder)
     # print('gtCoordType = %s' % gtCoordType)
     # print('detCoordType = %s' % detCoordType)
-    #print('showPlot %s' % showPlot)
+    # print('showPlot %s' % showPlot)
 
     # Get groundtruth boxes
     allBoundingBoxes, allClasses = getBoundingBoxes(
-        gtFolder, True, gtFormat, gtCoordType, imgSize=imgSize)
+        gtFolder, True, gtFormat, gtCoordType, imgSize=imgSize
+    )
     # Get detected boxes
     allBoundingBoxes, allClasses = getBoundingBoxes(
-        detFolder, False, detFormat, detCoordType, allBoundingBoxes, allClasses, imgSize=imgSize)
+        detFolder,
+        False,
+        detFormat,
+        detCoordType,
+        allBoundingBoxes,
+        allClasses,
+        imgSize=imgSize,
+    )
     allClasses.sort()
 
     evaluator = Evaluator(dataset=datatset)
@@ -962,7 +1027,8 @@ def evaluate_frameAP(gtFolder, detFolder, threshold = 0.5, savePath = None, data
         showAP=True,  # Show Average Precision in the title of the plot
         showInterpolatedPrecision=show_pr_curve,  # plot the interpolated precision curve
         savePath=savePath,
-        showGraphic=False)
+        showGraphic=False,
+    )
 
     # f = open(os.path.join(savePath, 'results.txt'), 'w')
     # f.write('Object Detection Metrics\n')
@@ -972,37 +1038,36 @@ def evaluate_frameAP(gtFolder, detFolder, threshold = 0.5, savePath = None, data
     # each detection is a class and store AP and mAP results in AP_res list
     AP_res = []
     for metricsPerClass in detections:
-
         # Get metric values per each class
-        cl = metricsPerClass['class']
-        ap = metricsPerClass['AP']
-        precision = metricsPerClass['precision']
-        recall = metricsPerClass['recall']
-        totalPositives = metricsPerClass['total positives']
-        total_TP = metricsPerClass['total TP']
-        total_FP = metricsPerClass['total FP']
+        cl = metricsPerClass["class"]
+        ap = metricsPerClass["AP"]
+        precision = metricsPerClass["precision"]
+        recall = metricsPerClass["recall"]
+        totalPositives = metricsPerClass["total positives"]
+        total_TP = metricsPerClass["total TP"]
+        total_FP = metricsPerClass["total FP"]
 
         if totalPositives > 0:
             validClasses = validClasses + 1
             acc_AP = acc_AP + ap
-            prec = ['%.2f' % p for p in precision]
-            rec = ['%.2f' % r for r in recall]
+            prec = ["%.2f" % p for p in precision]
+            rec = ["%.2f" % r for r in recall]
             ap_str = "{0:.2f}%".format(ap * 100)
             # ap_str = "{0:.4f}%".format(ap * 100)
-            #print('AP: %s (%s)' % (ap_str, cl))
+            # print('AP: %s (%s)' % (ap_str, cl))
             # f.write('\n\nClass: %s' % cl)
             # f.write('\nAP: %s' % ap_str)
             # f.write('\nPrecision: %s' % prec)
             # f.write('\nRecall: %s' % rec)
-            AP_res.append('AP: %s (%s)' % (ap_str, cl))
+            AP_res.append("AP: %s (%s)" % (ap_str, cl))
     mAP = acc_AP / validClasses
     mAP_str = "{0:.2f}%".format(mAP * 100)
-    #print('mAP: %s' % mAP_str)
-    AP_res.append('mAP: %s' % mAP_str)
+    # print('mAP: %s' % mAP_str)
+    AP_res.append("mAP: %s" % mAP_str)
     # f.write('\n\n\nmAP: %s' % mAP_str)
 
     return AP_res
 
 
-if __name__ == '__main__':
-    evaluate_frameAP('groundtruths_ucf', 'detection_test')
+if __name__ == "__main__":
+    evaluate_frameAP("groundtruths_ucf", "detection_test")

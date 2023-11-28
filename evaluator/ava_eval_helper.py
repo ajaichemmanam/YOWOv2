@@ -71,7 +71,7 @@ def read_csv(csv_file, class_whitelist=None, load_score=False):
     with open(csv_file, "r") as f:
         reader = csv.reader(f)
         for row in reader:
-            assert len(row) in [7, 8], "Wrong number of columns: " + row
+            assert len(row) in {7, 8}, f"Wrong number of columns: {row}"
             image_key = make_image_key(row[0], row[1])
             x1, y1, x2, y2 = [float(n) for n in row[2:6]]
             action_id = int(row[6])
@@ -99,7 +99,7 @@ def read_exclusions(exclusions_file):
         with open(exclusions_file, "r") as f:
             reader = csv.reader(f)
             for row in reader:
-                assert len(row) == 2, "Expected only 2 columns, got: " + row
+                assert len(row) == 2, f"Expected only 2 columns, got: {row}"
                 excluded.add(make_image_key(row[0], row[1]))
     return excluded
 
@@ -156,12 +156,10 @@ def evaluate_ava(
     )
 
     logger.info("Evaluating with %d unique GT frames." % len(groundtruth[0]))
-    logger.info(
-        "Evaluating with %d unique detection frames" % len(detections[0])
-    )
+    logger.info("Evaluating with %d unique detection frames" % len(detections[0]))
 
-    write_results(detections, "detections_%s.csv" % name)
-    write_results(groundtruth, "groundtruth_%s.csv" % name)
+    write_results(detections, f"detections_{name}.csv")
+    write_results(groundtruth, f"groundtruth_{name}.csv")
 
     results = run_evaluation(categories, groundtruth, detections, excluded_keys)
 
@@ -169,14 +167,10 @@ def evaluate_ava(
     return results["PascalBoxes_Precision/mAP@0.5IOU"]
 
 
-def run_evaluation(
-    categories, groundtruth, detections, excluded_keys, verbose=True
-):
+def run_evaluation(categories, groundtruth, detections, excluded_keys, verbose=True):
     """AVA evaluation main logic."""
 
-    pascal_evaluator = object_detection_evaluation.PascalDetectionEvaluator(
-        categories
-    )
+    pascal_evaluator = object_detection_evaluation.PascalDetectionEvaluator(categories)
 
     boxes, labels, _ = groundtruth
 
@@ -210,21 +204,18 @@ def run_evaluation(
 
         gt_keys.append(image_key)
 
-    '''detections format
+    """detections format
     boxes: dict, {'<video_name>,<sec>': [box1, box2,...(each box_i is normalized x1y1x2y2)]}
     labels: dict, {'<video_name>,<sec>': [cls_id(1 based), ...]}
     scores: dict, {'<video_name>,<sec>': [score...]}
     each box_i corresponds to 60 classes (classwhite list otherwise should be 80) and 60 scores
-    '''
+    """
     boxes, labels, scores = detections
 
     for image_key in boxes:
         if image_key in excluded_keys:
             logging.info(
-                (
-                    "Found excluded timestamp in detections: %s. "
-                    "It will be ignored."
-                ),
+                ("Found excluded timestamp in detections: %s. " "It will be ignored."),
                 image_key,
             )
             continue
@@ -274,10 +265,12 @@ def get_ava_eval_data(
 
         video = video_idx_to_name[video_idx]
 
-        key = video + "," + "%04d" % (sec)
+        key = f"{video}," + "%04d" % (sec)
         batch_box = boxes[i].tolist()  # [batch_idx, x1, y1, x2, y2]
         # The first is batch idx.
-        batch_box = [batch_box[j] for j in [0, 2, 1, 4, 3]]  # [batch_idx, y1, x1, y2, x2]
+        batch_box = [
+            batch_box[j] for j in [0, 2, 1, 4, 3]
+        ]  # [batch_idx, y1, x1, y2, x2]
         # here use this order is because below writing csv it use again use right order
 
         one_scores = scores[i].tolist()
@@ -304,5 +297,5 @@ def write_results(detections, filename):
                     % (key, box[0], box[1], box[2], box[3], label, score)
                 )
 
-    logger.info("AVA results wrote to %s" % filename)
+    logger.info(f"AVA results wrote to {filename}")
     logger.info("\ttook %d seconds." % (time.time() - start))
