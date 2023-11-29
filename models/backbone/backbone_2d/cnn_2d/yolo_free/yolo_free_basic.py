@@ -12,30 +12,34 @@ class SiLU(nn.Module):
         return x * torch.sigmoid(x)
 
 
-def get_conv2d(c1, c2, k, p, s, d, g, padding_mode='ZERO', bias=False):
-    if padding_mode == 'ZERO':
-        conv = nn.Conv2d(c1, c2, k, stride=s, padding=p, dilation=d, groups=g, bias=bias)
-    elif padding_mode == 'SAME':
-        conv = Conv2dSamePadding(c1, c2, k, stride=s, padding=p, dilation=d, groups=g, bias=bias)
+def get_conv2d(c1, c2, k, p, s, d, g, padding_mode="ZERO", bias=False):
+    if padding_mode == "ZERO":
+        conv = nn.Conv2d(
+            c1, c2, k, stride=s, padding=p, dilation=d, groups=g, bias=bias
+        )
+    elif padding_mode == "SAME":
+        conv = Conv2dSamePadding(
+            c1, c2, k, stride=s, padding=p, dilation=d, groups=g, bias=bias
+        )
 
     return conv
 
 
 def get_activation(act_type=None):
-    if act_type == 'relu':
+    if act_type == "relu":
         return nn.ReLU(inplace=True)
-    elif act_type == 'lrelu':
+    elif act_type == "lrelu":
         return nn.LeakyReLU(0.1, inplace=True)
-    elif act_type == 'mish':
+    elif act_type == "mish":
         return nn.Mish(inplace=True)
-    elif act_type == 'silu':
+    elif act_type == "silu":
         return nn.SiLU(inplace=True)
 
 
 def get_norm(norm_type, dim):
-    if norm_type == 'BN':
+    if norm_type == "BN":
         return nn.BatchNorm2d(dim)
-    elif norm_type == 'GN':
+    elif norm_type == "GN":
         return nn.GroupNorm(num_groups=32, num_channels=dim)
 
 
@@ -59,11 +63,7 @@ class Conv2dSamePadding(nn.Conv2d):
         # parse padding mode
         self.padding_method = kwargs.pop("padding", None)
         if self.padding_method is None:
-            if len(args) >= 5:
-                self.padding_method = args[4]
-            else:
-                self.padding_method = 0  # default padding number
-
+            self.padding_method = args[4] if len(args) >= 5 else 0
         if isinstance(self.padding_method, str):
             if self.padding_method.upper() == "SAME":
                 # If the padding mode is `SAME`, it will be manually padded
@@ -84,7 +84,9 @@ class Conv2dSamePadding(nn.Conv2d):
                 elif len(self.dilation) == 1:
                     self.dilation = [self.dilation[0]] * 2
             else:
-                raise ValueError("Unknown padding method: {}".format(self.padding_method))
+                raise ValueError(
+                    "Unknown padding method: {}".format(self.padding_method)
+                )
         else:
             super().__init__(*args, **kwargs, padding=self.padding_method)
 
@@ -100,10 +102,18 @@ class Conv2dSamePadding(nn.Conv2d):
                 output_w = math.ceil(input_w / stride_w)
 
                 padding_needed_h = max(
-                    0, (output_h - 1) * stride_h + (kernel_size_h - 1) * dilation_h + 1 - input_h
+                    0,
+                    (output_h - 1) * stride_h
+                    + (kernel_size_h - 1) * dilation_h
+                    + 1
+                    - input_h,
                 )
                 padding_needed_w = max(
-                    0, (output_w - 1) * stride_w + (kernel_size_w - 1) * dilation_w + 1 - input_w
+                    0,
+                    (output_w - 1) * stride_w
+                    + (kernel_size_w - 1) * dilation_w
+                    + 1
+                    - input_w,
                 )
 
                 left = padding_needed_w // 2
@@ -113,7 +123,9 @@ class Conv2dSamePadding(nn.Conv2d):
 
                 x = F.pad(x, [left, right, top, bottom])
             else:
-                raise ValueError("Unknown padding method: {}".format(self.padding_method))
+                raise ValueError(
+                    "Unknown padding method: {}".format(self.padding_method)
+                )
 
         x = super().forward(x)
 
@@ -122,22 +134,36 @@ class Conv2dSamePadding(nn.Conv2d):
 
 # Basic conv layer
 class Conv(nn.Module):
-    def __init__(self, 
-                 c1,                   # in channels
-                 c2,                   # out channels 
-                 k=1,                  # kernel size 
-                 p=0,                  # padding
-                 s=1,                  # padding
-                 d=1,                  # dilation
-                 act_type='',          # activation
-                 norm_type='',         # normalization
-                 padding_mode='ZERO',  # padding mode: "ZERO" or "SAME"
-                 depthwise=False):
+    def __init__(
+        self,
+        c1,  # in channels
+        c2,  # out channels
+        k=1,  # kernel size
+        p=0,  # padding
+        s=1,  # padding
+        d=1,  # dilation
+        act_type="",  # activation
+        norm_type="",  # normalization
+        padding_mode="ZERO",  # padding mode: "ZERO" or "SAME"
+        depthwise=False,
+    ):
         super(Conv, self).__init__()
         convs = []
-        add_bias = False if norm_type else True
+        add_bias = not norm_type
         if depthwise:
-            convs.append(get_conv2d(c1, c1, k=k, p=p, s=s, d=d, g=c1, padding_mode=padding_mode, bias=add_bias))
+            convs.append(
+                get_conv2d(
+                    c1,
+                    c1,
+                    k=k,
+                    p=p,
+                    s=s,
+                    d=d,
+                    g=c1,
+                    padding_mode=padding_mode,
+                    bias=add_bias,
+                )
+            )
             # depthwise conv
             if norm_type:
                 convs.append(get_norm(norm_type, c1))
@@ -151,14 +177,25 @@ class Conv(nn.Module):
                 convs.append(get_activation(act_type))
 
         else:
-            convs.append(get_conv2d(c1, c2, k=k, p=p, s=s, d=d, g=1, padding_mode=padding_mode, bias=add_bias))
+            convs.append(
+                get_conv2d(
+                    c1,
+                    c2,
+                    k=k,
+                    p=p,
+                    s=s,
+                    d=d,
+                    g=1,
+                    padding_mode=padding_mode,
+                    bias=add_bias,
+                )
+            )
             if norm_type:
                 convs.append(get_norm(norm_type, c2))
             if act_type:
                 convs.append(get_activation(act_type))
-            
-        self.convs = nn.Sequential(*convs)
 
+        self.convs = nn.Sequential(*convs)
 
     def forward(self, x):
         return self.convs(x)

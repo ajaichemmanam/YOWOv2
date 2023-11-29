@@ -9,18 +9,15 @@ class Backbone2D(nn.Module):
 
         self.backbone, self.feat_dims = build_2d_cnn(cfg, pretrained)
 
-        
     def forward(self, x):
         """
-            Input:
-                x: (Tensor) -> [B, C, H, W]
-            Output:
-                y: (List) -> [
-                    (Tensor) -> [B, C1, H1, W1],
-                    (Tensor) -> [B, C2, H2, W2],
-                    (Tensor) -> [B, C3, H3, W3]
-                    ]
+        Input:
+            x: (Tensor) -> [B, C, H, W]
+        Output:
+            feat: (List) -> [
+                (Tensor) -> [B, C1, H1, W1],
+                (Tensor) -> [B, C2, H2, W2],
+                (Tensor) -> [B, C3, H3, W3]
+                ]
         """
-        feat = self.backbone(x)
-
-        return feat
+        return self.backbone(x)

@@ -10,4 +10,3 @@ def build_backbone_2d(cfg, pretrained=False):
 def build_backbone_3d(cfg, pretrained=False):
     backbone = Backbone3D(cfg, pretrained)
     return backbone, backbone.feat_dim
-

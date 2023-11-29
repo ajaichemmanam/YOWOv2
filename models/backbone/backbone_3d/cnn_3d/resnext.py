@@ -5,22 +5,21 @@ from torch.autograd import Variable
 from torch.hub import load_state_dict_from_url
 from functools import partial
 
-__all__ = ['resnext50', 'resnext101', 'resnet152']
+__all__ = ["resnext50", "resnext101", "resnet152"]
 
 
 model_urls = {
     "resnext50": "https://github.com/yjh0410/PyTorch_YOWO/releases/download/yowo-weight/resnext-50-kinetics.pth",
     "resnext101": "https://github.com/yjh0410/PyTorch_YOWO/releases/download/yowo-weight/resnext-101-kinetics.pth",
-    "resnext152": "https://github.com/yjh0410/PyTorch_YOWO/releases/download/yowo-weight/resnext-152-kinetics.pth"
+    "resnext152": "https://github.com/yjh0410/PyTorch_YOWO/releases/download/yowo-weight/resnext-152-kinetics.pth",
 }
-
 
 
 def downsample_basic_block(x, planes, stride):
     out = F.avg_pool3d(x, kernel_size=1, stride=stride)
     zero_pads = torch.Tensor(
-        out.size(0), planes - out.size(1), out.size(2), out.size(3),
-        out.size(4)).zero_()
+        out.size(0), planes - out.size(1), out.size(2), out.size(3), out.size(4)
+    ).zero_()
 
     if isinstance(out.data, torch.cuda.FloatTensor):
         zero_pads = zero_pads.cuda()
@@ -33,8 +32,7 @@ def downsample_basic_block(x, planes, stride):
 class ResNeXtBottleneck(nn.Module):
     expansion = 2
 
-    def __init__(self, inplanes, planes, cardinality, stride=1,
-                 downsample=None):
+    def __init__(self, inplanes, planes, cardinality, stride=1, downsample=None):
         super(ResNeXtBottleneck, self).__init__()
         mid_planes = cardinality * int(planes / 32)
         self.conv1 = nn.Conv3d(inplanes, mid_planes, kernel_size=1, bias=False)
@@ -46,10 +44,12 @@ class ResNeXtBottleneck(nn.Module):
             stride=stride,
             padding=1,
             groups=cardinality,
-            bias=False)
+            bias=False,
+        )
         self.bn2 = nn.BatchNorm3d(mid_planes)
         self.conv3 = nn.Conv3d(
-            mid_planes, planes * self.expansion, kernel_size=1, bias=False)
+            mid_planes, planes * self.expansion, kernel_size=1, bias=False
+        )
         self.bn3 = nn.BatchNorm3d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -79,59 +79,49 @@ class ResNeXtBottleneck(nn.Module):
 
 
 class ResNeXt(nn.Module):
-
-    def __init__(self,
-                 block,
-                 layers,
-                 shortcut_type='B',
-                 cardinality=32):
+    def __init__(self, block, layers, shortcut_type="B", cardinality=32):
         self.inplanes = 64
         super(ResNeXt, self).__init__()
         self.conv1 = nn.Conv3d(
-            3,
-            64,
-            kernel_size=7,
-            stride=(1, 2, 2),
-            padding=(3, 3, 3),
-            bias=False)
+            3, 64, kernel_size=7, stride=(1, 2, 2), padding=(3, 3, 3), bias=False
+        )
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
-        
+
         self.maxpool = nn.MaxPool3d(kernel_size=(3, 3, 3), stride=2, padding=1)
-        
-        self.layer1 = self._make_layer(block, 128, layers[0], shortcut_type,
-                                       cardinality)
-        
+
+        self.layer1 = self._make_layer(
+            block, 128, layers[0], shortcut_type, cardinality
+        )
+
         self.layer2 = self._make_layer(
-            block, 256, layers[1], shortcut_type, cardinality, stride=2)
-        
+            block, 256, layers[1], shortcut_type, cardinality, stride=2
+        )
+
         self.layer3 = self._make_layer(
-            block, 512, layers[2], shortcut_type, cardinality, stride=2)
-        
+            block, 512, layers[2], shortcut_type, cardinality, stride=2
+        )
+
         self.layer4 = self._make_layer(
-            block, 1024, layers[3], shortcut_type, cardinality, stride=2)
+            block, 1024, layers[3], shortcut_type, cardinality, stride=2
+        )
 
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
-                m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                m.weight = nn.init.kaiming_normal_(m.weight, mode="fan_out")
             elif isinstance(m, nn.BatchNorm3d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def _make_layer(self,
-                    block,
-                    planes,
-                    blocks,
-                    shortcut_type,
-                    cardinality,
-                    stride=1):
+    def _make_layer(self, block, planes, blocks, shortcut_type, cardinality, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            if shortcut_type == 'A':
+            if shortcut_type == "A":
                 downsample = partial(
                     downsample_basic_block,
                     planes=planes * block.expansion,
-                    stride=stride)
+                    stride=stride,
+                )
             else:
                 downsample = nn.Sequential(
                     nn.Conv3d(
@@ -139,15 +129,16 @@ class ResNeXt(nn.Module):
                         planes * block.expansion,
                         kernel_size=1,
                         stride=stride,
-                        bias=False), nn.BatchNorm3d(planes * block.expansion))
+                        bias=False,
+                    ),
+                    nn.BatchNorm3d(planes * block.expansion),
+                )
 
-        layers = []
-        layers.append(
-            block(self.inplanes, planes, cardinality, stride, downsample))
+        layers = [block(self.inplanes, planes, cardinality, stride, downsample)]
         self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, cardinality))
-
+        layers.extend(
+            block(self.inplanes, planes, cardinality) for _ in range(1, blocks)
+        )
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -163,22 +154,22 @@ class ResNeXt(nn.Module):
 
         if c5.size(2) > 1:
             c5 = torch.mean(c5, dim=2, keepdim=True)
-        
+
         return c5.squeeze(2)
 
 
 def load_weight(model, arch):
-    print('Loading pretrained weight ...')
+    print("Loading pretrained weight ...")
     url = model_urls[arch]
     # check
     if url is None:
-        print('No pretrained weight for 3D CNN: {}'.format(arch.upper()))
+        print(f"No pretrained weight for 3D CNN: {arch.upper()}")
         return model
-        
-    print('Loading 3D backbone pretrained weight: {}'.format(arch.upper()))
+
+    print(f"Loading 3D backbone pretrained weight: {arch.upper()}")
     # checkpoint state dict
     checkpoint = load_state_dict_from_url(url=url, map_location="cpu", check_hash=True)
-    checkpoint_state_dict = checkpoint.pop('state_dict')
+    checkpoint_state_dict = checkpoint.pop("state_dict")
 
     # model state dict
     model_state_dict = model.state_dict()
@@ -201,61 +192,58 @@ def load_weight(model, arch):
             # print(k)
 
     model.load_state_dict(new_state_dict)
-        
+
     return model
 
 
 def resnext50(pretrained=False, **kwargs):
-    """Constructs a ResNet-50 model.
-    """
+    """Constructs a ResNet-50 model."""
     model = ResNeXt(ResNeXtBottleneck, [3, 4, 6, 3], **kwargs)
 
     if pretrained:
-        model = load_weight(model, 'resnext50')
+        model = load_weight(model, "resnext50")
 
     return model
 
 
 def resnext101(pretrained=False, **kwargs):
-    """Constructs a ResNet-101 model.
-    """
+    """Constructs a ResNet-101 model."""
     model = ResNeXt(ResNeXtBottleneck, [3, 4, 23, 3], **kwargs)
 
     if pretrained:
-        model = load_weight(model, 'resnext101')
+        model = load_weight(model, "resnext101")
 
     return model
 
 
 def resnext152(pretrained=False, **kwargs):
-    """Constructs a ResNet-101 model.
-    """
+    """Constructs a ResNet-101 model."""
     model = ResNeXt(ResNeXtBottleneck, [3, 8, 36, 3], **kwargs)
 
     if pretrained:
-        model = load_weight(model, 'resnext152')
+        model = load_weight(model, "resnext152")
 
     return model
 
 
 # build 3D resnet
-def build_resnext_3d(model_name='resnext101', pretrained=True):
-    if model_name == 'resnext50':
+def build_resnext_3d(model_name="resnext101", pretrained=True):
+    if model_name == "resnext50":
         model = resnext50(pretrained=pretrained)
         feats = 2048
 
-    elif model_name == 'resnext101':
+    elif model_name == "resnext101":
         model = resnext101(pretrained=pretrained)
         feats = 2048
 
-    elif model_name == 'resnext152':
+    elif model_name == "resnext152":
         model = resnext152(pretrained=pretrained)
         feats = 2048
 
     return model, feats
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import time
     from thop import profile
 
@@ -263,8 +251,8 @@ if __name__ == '__main__':
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
-        
-    model, feats = build_resnext_3d(model_name='resnext50', pretrained=False)
+
+    model, feats = build_resnext_3d(model_name="resnext50", pretrained=False)
     model = model.to(device)
 
     x = torch.randn(1, 3, 32, 256, 256).to(device)
@@ -275,11 +263,11 @@ if __name__ == '__main__':
     for y in outs:
         print(y.shape)
     # end time
-    print('Inference time: {}'.format(time.time() - t0))
+    print(f"Inference time: {time.time() - t0}")
 
     # FLOPs & Params
-    print('==============================')
-    flops, params = profile(model, inputs=(x, ), verbose=False)
-    print('==============================')
-    print('GFLOPs : {:.2f}'.format(flops / 1e9))
-    print('Params : {:.2f} M'.format(params / 1e6))
+    print("==============================")
+    flops, params = profile(model, inputs=(x,), verbose=False)
+    print("==============================")
+    print("GFLOPs : {:.2f}".format(flops / 1e9))
+    print("Params : {:.2f} M".format(params / 1e6))
