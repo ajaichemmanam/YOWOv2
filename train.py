@@ -1,4 +1,5 @@
 import cv2
+
 cv2.setNumThreads(0)
 cv2.ocl.setUseOpenCL(False)
 
@@ -25,100 +26,169 @@ GLOBAL_SEED = 42
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='YOWOv2')
+    parser = argparse.ArgumentParser(description="YOWOv2")
     # CUDA
-    parser.add_argument('--cuda', action='store_true', default=False,
-                        help='use cuda.')
+    parser.add_argument("--cuda", action="store_true", default=False, help="use cuda.")
 
     # Visualization
-    parser.add_argument('--tfboard', action='store_true', default=False,
-                        help='use tensorboard')
-    parser.add_argument('--save_folder', default='./weights/', type=str, 
-                        help='path to save weight')
-    parser.add_argument('--vis_data', action='store_true', default=False,
-                        help='use tensorboard')
+    parser.add_argument(
+        "--tfboard", action="store_true", default=False, help="use tensorboard"
+    )
+    parser.add_argument(
+        "--save_folder", default="./weights/", type=str, help="path to save weight"
+    )
+    parser.add_argument(
+        "--vis_data", action="store_true", default=False, help="use tensorboard"
+    )
 
     # Evaluation
-    parser.add_argument('--eval', action='store_true', default=False, 
-                        help='do evaluation during training.')
-    parser.add_argument('--eval_epoch', default=1, type=int, 
-                        help='after eval epoch, the model is evaluated on val dataset.')
-    parser.add_argument('--save_dir', default='inference_results/',
-                        type=str, help='save inference results.')
-    parser.add_argument('--eval_first', action='store_true', default=False,
-                        help='evaluate model before training.')
+    parser.add_argument(
+        "--eval",
+        action="store_true",
+        default=False,
+        help="do evaluation during training.",
+    )
+    parser.add_argument(
+        "--eval_epoch",
+        default=1,
+        type=int,
+        help="after eval epoch, the model is evaluated on val dataset.",
+    )
+    parser.add_argument(
+        "--save_dir",
+        default="inference_results/",
+        type=str,
+        help="save inference results.",
+    )
+    parser.add_argument(
+        "--eval_first",
+        action="store_true",
+        default=False,
+        help="evaluate model before training.",
+    )
 
     # Batchsize
-    parser.add_argument('-bs', '--batch_size', default=16, type=int, 
-                        help='batch size on a single GPU.')
-    parser.add_argument('-tbs', '--test_batch_size', default=16, type=int, 
-                        help='test batch size on a single GPU.')
-    parser.add_argument('-accu', '--accumulate', default=1, type=int, 
-                        help='gradient accumulate.')
-    parser.add_argument('-lr', '--base_lr', default=0.0001, type=float, 
-                        help='base lr.')
-    parser.add_argument('-ldr', '--lr_decay_ratio', default=0.5, type=float, 
-                        help='base lr.')
+    parser.add_argument(
+        "-bs", "--batch_size", default=16, type=int, help="batch size on a single GPU."
+    )
+    parser.add_argument(
+        "-tbs",
+        "--test_batch_size",
+        default=16,
+        type=int,
+        help="test batch size on a single GPU.",
+    )
+    parser.add_argument(
+        "-accu", "--accumulate", default=1, type=int, help="gradient accumulate."
+    )
+    parser.add_argument("-lr", "--base_lr", default=0.0001, type=float, help="base lr.")
+    parser.add_argument(
+        "-ldr", "--lr_decay_ratio", default=0.5, type=float, help="base lr."
+    )
 
     # Epoch
-    parser.add_argument('--max_epoch', default=10, type=int, 
-                        help='max epoch.')
-    parser.add_argument('--lr_epoch', nargs='+', default=[2,3,4], type=int,
-                        help='lr epoch to decay')
+    parser.add_argument("--max_epoch", default=10, type=int, help="max epoch.")
+    parser.add_argument(
+        "--lr_epoch", nargs="+", default=[2, 3, 4], type=int, help="lr epoch to decay"
+    )
 
     # Model
-    parser.add_argument('-v', '--version', default='yowo_v2_tiny', type=str,
-                        help='build YOWOv2')
-    parser.add_argument('-r', '--resume', default=None, type=str,
-                        help='keep training')
-    parser.add_argument('-ct', '--conf_thresh', default=0.1, type=float,
-                        help='confidence threshold. We suggest 0.005 for UCF24 and 0.1 for AVA.')
-    parser.add_argument('-nt', '--nms_thresh', default=0.5, type=float,
-                        help='NMS threshold. We suggest 0.5 for UCF24 and AVA.')
-    parser.add_argument('--topk', default=40, type=int,
-                        help='topk prediction candidates.')
-    parser.add_argument('-K', '--len_clip', default=16, type=int,
-                        help='video clip length.')
-    parser.add_argument('--freeze_backbone_2d', action="store_true", default=False,
-                        help="freeze 2D backbone.")
-    parser.add_argument('--freeze_backbone_3d', action="store_true", default=False,
-                        help="freeze 3d backbone.")
-    parser.add_argument('-m', '--memory', action="store_true", default=False,
-                        help="memory propagate.")
+    parser.add_argument(
+        "-v", "--version", default="yowo_v2_tiny", type=str, help="build YOWOv2"
+    )
+    parser.add_argument("-r", "--resume", default=None, type=str, help="keep training")
+    parser.add_argument(
+        "-ct",
+        "--conf_thresh",
+        default=0.1,
+        type=float,
+        help="confidence threshold. We suggest 0.005 for UCF24 and 0.1 for AVA.",
+    )
+    parser.add_argument(
+        "-nt",
+        "--nms_thresh",
+        default=0.5,
+        type=float,
+        help="NMS threshold. We suggest 0.5 for UCF24 and AVA.",
+    )
+    parser.add_argument(
+        "--topk", default=40, type=int, help="topk prediction candidates."
+    )
+    parser.add_argument(
+        "-K", "--len_clip", default=16, type=int, help="video clip length."
+    )
+    parser.add_argument(
+        "--freeze_backbone_2d",
+        action="store_true",
+        default=False,
+        help="freeze 2D backbone.",
+    )
+    parser.add_argument(
+        "--freeze_backbone_3d",
+        action="store_true",
+        default=False,
+        help="freeze 3d backbone.",
+    )
+    parser.add_argument(
+        "-m", "--memory", action="store_true", default=False, help="memory propagate."
+    )
 
     # Dataset
-    parser.add_argument('-d', '--dataset', default='ucf24',
-                        help='ucf24, ava_v2.2')
-    parser.add_argument('--root', default='/mnt/share/ssd2/dataset/STAD/',
-                        help='data root')
-    parser.add_argument('--num_workers', default=4, type=int, 
-                        help='Number of workers used in dataloading')
+    parser.add_argument("-d", "--dataset", default="ucf24", help="ucf24, ava_v2.2")
+    parser.add_argument(
+        "--root", default="/mnt/share/ssd2/dataset/STAD/", help="data root"
+    )
+    parser.add_argument(
+        "--num_workers",
+        default=4,
+        type=int,
+        help="Number of workers used in dataloading",
+    )
 
     # Matcher
-    parser.add_argument('--center_sampling_radius', default=2.5, type=float, 
-                        help='conf loss weight factor.')
-    parser.add_argument('--topk_candicate', default=10, type=int, 
-                        help='cls loss weight factor.')
+    parser.add_argument(
+        "--center_sampling_radius",
+        default=2.5,
+        type=float,
+        help="conf loss weight factor.",
+    )
+    parser.add_argument(
+        "--topk_candicate", default=10, type=int, help="cls loss weight factor."
+    )
 
     # Loss
-    parser.add_argument('--loss_conf_weight', default=1, type=float, 
-                        help='conf loss weight factor.')
-    parser.add_argument('--loss_cls_weight', default=1, type=float, 
-                        help='cls loss weight factor.')
-    parser.add_argument('--loss_reg_weight', default=5, type=float, 
-                        help='reg loss weight factor.')
-    parser.add_argument('-fl', '--focal_loss', action="store_true", default=False,
-                        help="use focal loss for classification.")
-    
+    parser.add_argument(
+        "--loss_conf_weight", default=1, type=float, help="conf loss weight factor."
+    )
+    parser.add_argument(
+        "--loss_cls_weight", default=1, type=float, help="cls loss weight factor."
+    )
+    parser.add_argument(
+        "--loss_reg_weight", default=5, type=float, help="reg loss weight factor."
+    )
+    parser.add_argument(
+        "-fl",
+        "--focal_loss",
+        action="store_true",
+        default=False,
+        help="use focal loss for classification.",
+    )
+
     # DDP train
-    parser.add_argument('-dist', '--distributed', action='store_true', default=False,
-                        help='distributed training')
-    parser.add_argument('--dist_url', default='env://', 
-                        help='url used to set up distributed training')
-    parser.add_argument('--world_size', default=1, type=int,
-                        help='number of distributed processes')
-    parser.add_argument('--sybn', action='store_true', default=False, 
-                        help='use sybn.')
+    parser.add_argument(
+        "-dist",
+        "--distributed",
+        action="store_true",
+        default=False,
+        help="distributed training",
+    )
+    parser.add_argument(
+        "--dist_url", default="env://", help="url used to set up distributed training"
+    )
+    parser.add_argument(
+        "--world_size", default=1, type=int, help="number of distributed processes"
+    )
+    parser.add_argument("--sybn", action="store_true", default=False, help="use sybn.")
 
     return parser.parse_args()
 
@@ -131,7 +201,7 @@ def train():
     # dist
     world_size = distributed_utils.get_world_size()
     per_gpu_batch = args.batch_size // world_size
-    print(f'World size: {world_size}')
+    print(f"World size: {world_size}")
     if args.distributed:
         distributed_utils.init_distributed_mode(args)
         print(f"git:\n  {distributed_utils.get_sha()}\n")
@@ -142,7 +212,7 @@ def train():
 
     # cuda
     if args.cuda:
-        print('use cuda')
+        print("use cuda")
         cudnn.benchmark = True
         device = torch.device("cuda")
     else:
@@ -156,7 +226,9 @@ def train():
     dataset, evaluator, num_classes = build_dataset(d_cfg, args, is_train=True)
 
     # dataloader
-    dataloader = build_dataloader(args, dataset, per_gpu_batch, CollateFunc(), is_train=True)
+    dataloader = build_dataloader(
+        args, dataset, per_gpu_batch, CollateFunc(), is_train=True
+    )
 
     # build model
     model, criterion = build_model(
@@ -164,10 +236,10 @@ def train():
         d_cfg=d_cfg,
         m_cfg=m_cfg,
         device=device,
-        num_classes=num_classes, 
+        num_classes=num_classes,
         trainable=True,
-        resume=args.resume
-        )
+        resume=args.resume,
+    )
     model = model.to(device).train()
 
     # DDP
@@ -178,7 +250,7 @@ def train():
 
     # SyncBatchNorm
     if args.sybn and args.distributed:
-        print('use SyncBatchNorm ...')
+        print("use SyncBatchNorm ...")
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     # Compute FLOPs and Params
@@ -186,18 +258,23 @@ def train():
         model_copy = deepcopy(model_without_ddp)
         FLOPs_and_Params(
             model=model_copy,
-            img_size=d_cfg['test_size'],
+            img_size=d_cfg["test_size"],
             len_clip=args.len_clip,
-            device=device)
+            device=device,
+        )
         del model_copy
 
     # optimizer
     base_lr = args.base_lr
     accumulate = args.accumulate
-    optimizer, start_epoch = build_optimizer(d_cfg, model_without_ddp, base_lr, args.resume)
+    optimizer, start_epoch = build_optimizer(
+        d_cfg, model_without_ddp, base_lr, args.resume
+    )
 
     # lr scheduler
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, args.lr_epoch, args.lr_decay_ratio)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer, args.lr_epoch, args.lr_decay_ratio
+    )
 
     # warmup scheduler
     warmup_scheduler = build_warmup(d_cfg, base_lr=base_lr)
@@ -216,19 +293,19 @@ def train():
     t0 = time.time()
     for epoch in range(start_epoch, max_epoch):
         if args.distributed:
-            dataloader.batch_sampler.sampler.set_epoch(epoch)            
+            dataloader.batch_sampler.sampler.set_epoch(epoch)
 
         # train one epoch
         for iter_i, (frame_ids, video_clips, targets) in enumerate(dataloader):
             ni = iter_i + epoch * epoch_size
 
             # warmup
-            if ni < d_cfg['wp_iter'] and warmup:
+            if ni < d_cfg["wp_iter"] and warmup:
                 warmup_scheduler.warmup(ni, optimizer)
 
-            elif ni == d_cfg['wp_iter'] and warmup:
+            elif ni == d_cfg["wp_iter"] and warmup:
                 # warmup is over
-                print('Warmup is over')
+                print("Warmup is over")
                 warmup = False
                 warmup_scheduler.set_lr(optimizer, lr=base_lr, base_lr=base_lr)
 
@@ -240,14 +317,14 @@ def train():
 
             # loss
             loss_dict = criterion(outputs, targets)
-            losses = loss_dict['losses']
+            losses = loss_dict["losses"]
 
-            # reduce            
+            # reduce
             loss_dict_reduced = distributed_utils.reduce_dict(loss_dict)
 
             # check loss
             if torch.isnan(losses):
-                print('loss is NAN !!')
+                print("loss is NAN !!")
                 continue
 
             # Backward
@@ -262,8 +339,17 @@ def train():
             # Display
             if distributed_utils.is_main_process() and iter_i % 10 == 0:
                 t1 = time.time()
-                cur_lr = [param_group['lr']  for param_group in optimizer.param_groups]
-                print_log(cur_lr, epoch,  max_epoch, iter_i, epoch_size,loss_dict_reduced, t1-t0, accumulate)
+                cur_lr = [param_group["lr"] for param_group in optimizer.param_groups]
+                print_log(
+                    cur_lr,
+                    epoch,
+                    max_epoch,
+                    iter_i,
+                    epoch_size,
+                    loss_dict_reduced,
+                    t1 - t0,
+                    accumulate,
+                )
 
                 t0 = time.time()
 
@@ -278,10 +364,10 @@ def eval_one_epoch(args, model_eval, evaluator, epoch, path_to_save):
     # check evaluator
     if distributed_utils.is_main_process():
         if evaluator is None:
-            print('No evaluator ... save model and go on training.')
+            print("No evaluator ... save model and go on training.")
 
         else:
-            print('eval ...')
+            print("eval ...")
             # set eval mode
             model_eval.trainable = False
             model_eval.eval()
@@ -294,13 +380,13 @@ def eval_one_epoch(args, model_eval, evaluator, epoch, path_to_save):
             model_eval.train()
 
         # save model
-        print('Saving state, epoch:', epoch + 1)
-        weight_name = f'{args.version}_epoch_{epoch + 1}.pth'
+        print("Saving state, epoch:", epoch + 1)
+        weight_name = f"{args.version}_epoch_{epoch + 1}.pth"
         checkpoint_path = os.path.join(path_to_save, weight_name)
-        torch.save({'model': model_eval.state_dict(),
-                    'epoch': epoch,
-                    'args': args}, 
-                    checkpoint_path)                      
+        torch.save(
+            {"model": model_eval.state_dict(), "epoch": epoch, "args": args},
+            checkpoint_path,
+        )
 
     if args.distributed:
         # wait for all processes to synchronize
@@ -309,22 +395,22 @@ def eval_one_epoch(args, model_eval, evaluator, epoch, path_to_save):
 
 def print_log(lr, epoch, max_epoch, iter_i, epoch_size, loss_dict, time, accumulate):
     # basic infor
-    log = f'[Epoch: {epoch + 1}/{max_epoch}]'
-    log += f'[Iter: {iter_i}/{epoch_size}]'
-    log += '[lr: {:.6f}]'.format(lr[0])
+    log = f"[Epoch: {epoch + 1}/{max_epoch}]"
+    log += f"[Iter: {iter_i}/{epoch_size}]"
+    log += "[lr: {:.6f}]".format(lr[0])
     # loss infor
     for k in loss_dict.keys():
-        if k == 'losses':
-            log += '[{}: {:.2f}]'.format(k, loss_dict[k] * accumulate)
+        if k == "losses":
+            log += "[{}: {:.2f}]".format(k, loss_dict[k] * accumulate)
         else:
-            log += '[{}: {:.2f}]'.format(k, loss_dict[k])
+            log += "[{}: {:.2f}]".format(k, loss_dict[k])
 
     # other infor
-    log += '[time: {:.2f}]'.format(time)
+    log += "[time: {:.2f}]".format(time)
 
     # print log infor
     print(log, flush=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     train()
